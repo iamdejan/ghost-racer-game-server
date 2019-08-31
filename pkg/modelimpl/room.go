@@ -13,6 +13,20 @@ type room struct {
 	players map[uint64]model.Player
 	capacity int
 	circuit model.Circuit
+
+	events *roomEventFeed
+}
+
+func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
+	return &room{
+		players:  make(map[uint64]model.Player),
+		roomID:   roomID,
+		capacity: capacity,
+		circuit: &circuit{
+			circuitID: circuitID,
+		},
+		events: newRoomEventFeed(),
+	}
 }
 
 func (r *room) ID() uint64 {
@@ -45,6 +59,11 @@ func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
 	
 	r.players[player.PlayerID()] = player
 
+	r.events.put(model.RoomEventInsertPlayer(&model.PlayerJoinRoomEventPayload{
+		PlayerID:   player.playerID,
+		PlayerName: player.name,
+	}))
+
 	return true
 }
 
@@ -54,6 +73,10 @@ func (r *room) RemovePlayer(playerID uint64) bool {
 
 	delete(r.players, playerID)
 
+	r.events.put(model.RoomEventRemovePlayer(&model.PlayerLeaveRoomEventPayload{
+		PlayerID: playerID,
+	}))
+
 	return true
 }
 
@@ -61,6 +84,6 @@ func (r *room) QueryPlayer(playerID uint64) model.Player {
 	return r.players[playerID]
 }
 
-func (r *room) Events() model.RoomEventFeed {
-	return nil
+func (r *room) EventFeed() model.RoomEventFeed {
+	return r.events
 }

@@ -8,5 +8,5 @@ type Room interface {
 	InsertPlayer(payload PlayerPayload) bool
 	RemovePlayer(playerID uint64) bool
 	QueryPlayer(playerID uint64) Player
-	Events() RoomEventFeed
+	EventFeed() RoomEventFeed
 }

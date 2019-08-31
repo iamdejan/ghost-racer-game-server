@@ -40,17 +40,6 @@ func (game *Game) CreateRoom(capacity int, circuitID uint64) (model.Room, int, s
 	return room, 200, ""
 }
 
-func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
-	return &room{
-		players:  make(map[uint64]model.Player),
-		roomID:   roomID,
-		capacity: capacity,
-		circuit: &circuit{
-			circuitID: circuitID,
-		},
-	}
-}
-
 func (game *Game) QueryRoom(roomID uint64) model.Room {
 	return game.rooms[roomID]
 }
