@@ -51,9 +51,25 @@ func buildPlayerWithPayload(payload model.PlayerPayload) *player {
 	}
 }
 
+func (r *room) isFull() bool {
+	return r.capacity == len(r.players)
+}
+
+func (r *room) doesGameStart() bool {
+	return r.isFull()
+}
+
+func (r *room) startRace() {
+	r.events.put(model.RoomEventRaceStarts())
+}
+
 func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
 	r.roomMutex.Lock()
 	defer r.roomMutex.Unlock()
+
+	if r.doesGameStart() {
+		return false
+	}
 
 	player := buildPlayerWithPayload(payload)
 	
@@ -64,12 +80,20 @@ func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
 		PlayerName: player.name,
 	}))
 
+	if r.isFull() {
+		r.startRace()
+	}
+
 	return true
 }
 
 func (r *room) RemovePlayer(playerID uint64) bool {
 	r.roomMutex.Lock()
 	defer r.roomMutex.Unlock()
+
+	if r.doesGameStart() {
+		return false
+	}
 
 	delete(r.players, playerID)
 

@@ -7,7 +7,7 @@ import (
 )
 
 func buildNewRoom(c circuit) room {
-	return *newRoom(1, 4, 1)
+	return *newRoom(1, 2, 1)
 }
 
 func buildNewCircuit(circuitID uint64) circuit {
@@ -104,4 +104,18 @@ func TestRoom_EventsWhenRemovePlayer(t *testing.T) {
 	utility.AssertNotNil(roomEvents, "roomEvents should not be nil!", t)
 	utility.AssertTrue(len(roomEvents) == 2, "roomEvents length should be 2!", t)
 	utility.AssertEquals(newLastID, 1, "newLastID must be 1!", t)
+}
+
+func TestRoom_StartRaceWhenFull(t *testing.T) {
+	r, p1 := initiateTestData()
+	r.InsertPlayer(p1)
+	p2 := buildNewPlayer(2, "Daniel")
+	r.InsertPlayer(p2)
+
+	eventFeed := r.EventFeed()
+	roomEvents, newLastID, _ := eventFeed.List(-1)
+	utility.AssertNotNil(roomEvents, "roomEvents should not be nil!", t)
+	utility.AssertTrue(len(roomEvents) == 3, "roomEvents length should be 3!", t)
+	utility.AssertEquals(newLastID, 2, "newLastID must be 2!", t)
+	utility.AssertEquals(roomEvents[2].Type(), model.RoomEventRaceStarts().Type(), "Race should start!", t)
 }
