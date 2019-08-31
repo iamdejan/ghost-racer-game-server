@@ -7,12 +7,7 @@ import (
 )
 
 func buildNewRoom(c circuit) room {
-	return room{
-		roomID:0,
-		players:make(map[uint64]model.Player),
-		capacity:0,
-		circuit: &c,
-	}
+	return *newRoom(1, 4, 1)
 }
 
 func buildNewCircuit(circuitID uint64) circuit {
@@ -86,4 +81,27 @@ func TestRoom_QueryPlayer_NotFound(t *testing.T) {
 	r.InsertPlayer(p)
 	queryPlayerResult := r.QueryPlayer(2)
 	utility.AssertTrue(queryPlayerResult == nil, "queryPlayerResult should be nil!", t)
+}
+
+func TestRoom_EventsWhenInsertPlayer(t *testing.T) {
+	r, p := initiateTestData()
+	r.InsertPlayer(p)
+
+	eventFeed := r.EventFeed()
+	roomEvents, newLastID, _ := eventFeed.List(-1)
+	utility.AssertNotNil(roomEvents, "roomEvents should not be nil!", t)
+	utility.AssertTrue(len(roomEvents) == 1, "roomEvents length should be 1!", t)
+	utility.AssertNotEquals(newLastID, -1, "newLastID must be > -1!", t)
+}
+
+func TestRoom_EventsWhenRemovePlayer(t *testing.T) {
+	r, p := initiateTestData()
+	r.InsertPlayer(p)
+	r.RemovePlayer(p.PlayerID)
+
+	eventFeed := r.EventFeed()
+	roomEvents, newLastID, _ := eventFeed.List(-1)
+	utility.AssertNotNil(roomEvents, "roomEvents should not be nil!", t)
+	utility.AssertTrue(len(roomEvents) == 2, "roomEvents length should be 2!", t)
+	utility.AssertEquals(newLastID, 1, "newLastID must be 1!", t)
 }
