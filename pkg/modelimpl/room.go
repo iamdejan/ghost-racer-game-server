@@ -76,8 +76,8 @@ func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
 	r.players[player.PlayerID()] = player
 
 	r.eventFeed.put(model.RoomEventInsertPlayer(&model.PlayerJoinRoomEventPayload{
-		PlayerID:   player.playerID,
-		PlayerName: player.name,
+		PlayerID:   player.PlayerID(),
+		PlayerName: player.Name(),
 	}))
 
 	if r.isFull() {
