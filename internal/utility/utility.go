@@ -29,13 +29,7 @@ func ParseJSON(writer http.ResponseWriter, byteData []byte, value interface{}) b
 }
 
 func WriteJSON(writer http.ResponseWriter, value interface{}) bool {
-	byteData, err := json.Marshal(value)
-	if err != nil {
-		log.Println("Fail to marshal JSON! Error:", err)
-		writer.WriteHeader(500)
-		return false
-	}
-
+	byteData, _ := json.Marshal(value)
 	writer.Header().Set("Content-Type", "application/json")
 
 	if _, err := writer.Write(byteData); err != nil {
