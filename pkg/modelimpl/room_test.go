@@ -112,10 +112,25 @@ func TestRoom_StartRaceWhenFull(t *testing.T) {
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
 
+	assertRoomIsFull(r, t)
+}
+
+func assertRoomIsFull(r room, t *testing.T) {
 	eventFeed := r.EventFeed()
 	roomEvents, newLastID, _ := eventFeed.List(-1)
 	utility.AssertNotNil(roomEvents, "roomEvents should not be nil!", t)
 	utility.AssertTrue(len(roomEvents) == 3, "roomEvents length should be 3!", t)
 	utility.AssertEquals(newLastID, 2, "newLastID must be 2!", t)
 	utility.AssertEquals(roomEvents[2].Type(), model.RoomEventRaceStarts().Type(), "Race should start!", t)
+}
+
+func TestRoom_JoinRoomWhenFull(t *testing.T) {
+	r, p1 := initiateTestData()
+	r.InsertPlayer(p1)
+	p2 := buildNewPlayer(2, "Daniel")
+	r.InsertPlayer(p2)
+	p3 := buildNewPlayer(3, "Johan")
+	r.InsertPlayer(p3)
+
+	assertRoomIsFull(r, t)
 }
