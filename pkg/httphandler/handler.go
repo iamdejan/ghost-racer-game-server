@@ -27,6 +27,7 @@ func (handler *Handler) Routes() http.Handler {
 
 	router.HandleFunc("/room/new", handler.createRoom).Methods(http.MethodPost)
 	router.HandleFunc("/room/{roomID}/player/join", handler.joinRoom).Methods(http.MethodPost)
+	router.HandleFunc("/room/{roomID}/events/{lastID}", handler.getEvents).Methods(http.MethodGet)
 
 	return router
 }
@@ -84,7 +85,7 @@ func (handler *Handler) joinRoom(writer http.ResponseWriter, request *http.Reque
 	var playerPayload = model.PlayerPayload(roomPayload)
 	if room.InsertPlayer(playerPayload) != true {
 		writer.WriteHeader(http.StatusInternalServerError)
-		writer.Write([]byte("{\"" + errorMessageKey + "\": \"" + "Fail to insert player!!" + "\"}"))
+		writer.Write([]byte("{\"" + errorMessageKey + "\": \"" + "Fail to insert player!" + "\"}"))
 		return
 	}
 
@@ -92,5 +93,42 @@ func (handler *Handler) joinRoom(writer http.ResponseWriter, request *http.Reque
 		RoomID:    roomID,
 		Capacity:  room.Capacity(),
 		CircuitID: room.Circuit().ID(),
+	})
+}
+
+func (handler *Handler) getEvents(writer http.ResponseWriter, request *http.Request) {
+	lastID, err := strconv.Atoi(mux.Vars(request)["lastID"])
+	if err != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte("{\"" + errorMessageKey + "\": \"" + "Fail to get lastID from URL!" + "\"}"))
+		return
+	}
+
+	roomID, err := strconv.ParseUint(mux.Vars(request)["roomID"], 10, 64)
+	if err != nil {
+		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte("{\"" + errorMessageKey + "\": \"" + "Fail to get roomID from URL!" + "\"}"))
+		return
+	}
+
+	room := handler.Game.QueryRoom(roomID)
+	if room == nil {
+		writer.WriteHeader(http.StatusNotFound)
+		writer.Write([]byte("{\"" + errorMessageKey + "\": \"" + "Room isn't found!" + "\"}"))
+		return
+	}
+
+	events, newLastID, waitChannel := room.EventFeed().List(lastID)
+	if len(events) == 0 {
+		select {
+			case <- waitChannel:
+				events, newLastID, _ = room.EventFeed().List(lastID)
+			case <- time.After(handler.RequestMaxDuration):
+		}
+	}
+
+	utility.WriteJSON(writer, roomEventsResponse{
+		Events: events,
+		LastID: newLastID,
 	})
 }
