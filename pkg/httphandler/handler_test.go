@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/iamdejan/ghost-racer-game-server/internal/utility"
+	"github.com/iamdejan/ghost-racer-game-server/pkg/model"
 	"github.com/iamdejan/ghost-racer-game-server/pkg/modelimpl"
 	"io/ioutil"
 	"net/http"
@@ -30,7 +31,7 @@ func TestHandler_CreateRoom_ValidData(t *testing.T) {
 	TestHandler_CreateHandlerAndRouter(t)
 
 	data := createRoomRequest{
-		Capacity: 4,
+		Capacity: 2,
 		CircuitID: 1,
 	}
 
@@ -79,6 +80,48 @@ func TestHandler_JoinRoom(t *testing.T) {
 	}
 
 	utility.AssertNotNil(roomData, "roomData is nil!", t)
+}
+
+func TestHandler_JoinRoomThenStart(t *testing.T) {
+	TestHandler_JoinRoom(t)
+
+	data := joinRoomRequest{
+		PlayerID: 2,
+		PlayerName: "Daniel",
+	}
+
+	var roomID uint64 = 1
+
+	statusCode, _ := joinRoomTesting(roomID, data, t)
+	utility.AssertEquals(statusCode, http.StatusOK, "Status code != 200!", t)
+
+	request, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/room/%d/events/%d", roomID, -1), nil)
+	if err != nil {
+		t.Fatal("Fail to create request! Error:", err)
+	}
+	request = mux.SetURLVars(request, map[string]string{
+		"roomID": fmt.Sprintf("%d", roomID),
+		"lastID": "-1",
+	})
+
+	response := httptest.NewRecorder()
+	utility.AssertNotNil(handler.Game, "handler.Game should not be null!", t)
+	handler.getEvents(response, request)
+	responseData := readBodyData(response, t)
+	utility.AssertNotNil(responseData, "responseData should not be nil!", t)
+	utility.AssertNotBlank(string(responseData), "responseData should not be blank!", t)
+
+	var events roomEventsResponse
+	if err := json.Unmarshal(responseData, &events); err != nil {
+		t.Fatal("Fail to parse JSON! Error:", err)
+	}
+	utility.AssertEquals(events.LastID, 2, "new lastID should be 2!", t)
+	utility.AssertEquals(len(events.Events.([]interface{})), 3, "Length of events should be 3!", t)
+
+	lastEvent := (events.Events.([]interface{}))[2].(map[string]interface{})
+	if lastEvent["EventType"] != string(model.RoomEventRaceStarts().Type()) {
+		t.Fatal("Last event is not RACE_START!")
+	}
 }
 
 func createRoomTesting(data interface{}, t *testing.T) (statusCode int, responseData []byte) {
