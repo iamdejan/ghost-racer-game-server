@@ -134,3 +134,13 @@ func TestRoom_JoinRoomWhenFull(t *testing.T) {
 
 	assertRoomIsFull(r, t)
 }
+
+func TestRoom_LeaveRoomWhenRaceStarts(t *testing.T) {
+	r, p1 := initiateTestData()
+	r.InsertPlayer(p1)
+	p2 := buildNewPlayer(2, "Daniel")
+	r.InsertPlayer(p2)
+
+	utility.AssertEquals(r.RemovePlayer(p1.PlayerID), false, "Remove player should be false if full!", t)
+	assertRoomIsFull(r, t)
+}
