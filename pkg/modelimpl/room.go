@@ -14,7 +14,7 @@ type room struct {
 	capacity int
 	circuit model.Circuit
 
-	events *roomEventFeed
+	eventFeed *roomEventFeed
 }
 
 func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
@@ -25,7 +25,7 @@ func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 		circuit: &circuit{
 			circuitID: circuitID,
 		},
-		events: newRoomEventFeed(),
+		eventFeed: newRoomEventFeed(),
 	}
 }
 
@@ -60,7 +60,7 @@ func (r *room) doesGameStart() bool {
 }
 
 func (r *room) startRace() {
-	r.events.put(model.RoomEventRaceStarts())
+	r.eventFeed.put(model.RoomEventRaceStarts())
 }
 
 func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
@@ -75,7 +75,7 @@ func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
 	
 	r.players[player.PlayerID()] = player
 
-	r.events.put(model.RoomEventInsertPlayer(&model.PlayerJoinRoomEventPayload{
+	r.eventFeed.put(model.RoomEventInsertPlayer(&model.PlayerJoinRoomEventPayload{
 		PlayerID:   player.playerID,
 		PlayerName: player.name,
 	}))
@@ -97,7 +97,7 @@ func (r *room) RemovePlayer(playerID uint64) bool {
 
 	delete(r.players, playerID)
 
-	r.events.put(model.RoomEventRemovePlayer(&model.PlayerLeaveRoomEventPayload{
+	r.eventFeed.put(model.RoomEventRemovePlayer(&model.PlayerLeaveRoomEventPayload{
 		PlayerID: playerID,
 	}))
 
@@ -109,5 +109,5 @@ func (r *room) QueryPlayer(playerID uint64) model.Player {
 }
 
 func (r *room) EventFeed() model.RoomEventFeed {
-	return r.events
+	return r.eventFeed
 }
