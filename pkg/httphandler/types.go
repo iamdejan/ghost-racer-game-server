@@ -21,3 +21,8 @@ type joinRoomResponse struct {
 	Capacity int
 	CircuitID uint64
 }
+
+type roomEventsResponse struct {
+	Events interface{}
+	LastID int
+}
