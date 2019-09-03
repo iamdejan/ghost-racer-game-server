@@ -3,6 +3,7 @@ package modelimpl
 import (
 	"fmt"
 	"github.com/iamdejan/ghost-racer-game-server/internal/utility"
+	"github.com/iamdejan/ghost-racer-game-server/pkg/model"
 	"testing"
 )
 
@@ -12,6 +13,10 @@ var p *player = &player{
 	lapsCompleted:             10,
 	checkpointsCompleted:      0.75,
 	latestCheckpointTimestamp: 1567310552771932193,
+	position: model.Position{
+		X: 1.1,
+		Y: 13.6,
+	},
 }
 
 func TestPlayer_PlayerID(t *testing.T) {
@@ -32,4 +37,19 @@ func TestPlayer_CheckpointsCompleted(t *testing.T) {
 
 func TestPlayer_LatestCheckpointTimestamp(t *testing.T) {
 	utility.AssertEquals(p.LatestCheckpointTimestamp(), p.latestCheckpointTimestamp, "Latest checkpoint timestamp should be " + fmt.Sprint(p.latestCheckpointTimestamp) + "!", t)
+}
+
+func TestPlayer_Position(t *testing.T) {
+	utility.AssertEquals(p.Position(), p.position, "Position should be " + fmt.Sprint(p.position), t)
+}
+
+func TestPlayer_SetPosition(t *testing.T) {
+	newPosition := model.Position{
+		X: 2.5,
+		Y: 0.4,
+	}
+
+	p.SetPosition(newPosition)
+
+	utility.AssertEquals(p.Position(), newPosition, "Position should be " + fmt.Sprint(p.position), t)
 }
