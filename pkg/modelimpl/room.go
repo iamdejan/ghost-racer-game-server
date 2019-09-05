@@ -16,7 +16,7 @@ const dataSeparator = "#"
 const positionSeparator = ","
 const eachDataSeparator = "-"
 
-const host = "broker.hivemq.com:1883"
+const host = "0.0.0.0:1883"
 
 type room struct {
 	roomMutex sync.RWMutex
@@ -58,7 +58,6 @@ func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 			p.SetPosition(position)
 		})
 
-		//TODO: publish players' position to players
 		gobot.Every(10 * time.Millisecond, func() {
 			payload := r.buildMessagePayload()
 			if _, err := mqttAdaptor.PublishWithQOS(fmt.Sprintf("gr-blast-racer-position-room-%d", roomID), 1, []byte(payload)); err != nil {
@@ -169,7 +168,12 @@ func (r *room) RemovePlayer(playerID uint64) bool {
 }
 
 func (r *room) QueryPlayer(playerID uint64) model.Player {
-	return r.players[playerID]
+	player := r.players[playerID]
+	if player == nil {
+		return nil
+	}
+
+	return player
 }
 
 func (r *room) EventFeed() model.RoomEventFeed {
