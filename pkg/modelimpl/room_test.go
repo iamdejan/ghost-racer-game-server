@@ -83,7 +83,7 @@ func TestRoom_QueryPlayer_NotFound(t *testing.T) {
 	r, p := initiateTestData()
 	r.InsertPlayer(p)
 	queryPlayerResult := r.QueryPlayer(2)
-	utility.AssertEquals(fmt.Sprint(queryPlayerResult), fmt.Sprint(nil), "queryPlayerResult should be nil!", t)
+	utility.AssertEquals(queryPlayerResult, nil, "queryPlayerResult should be nil!", t)
 }
 
 func TestRoom_EventsWhenInsertPlayer(t *testing.T) {
@@ -114,6 +114,7 @@ func TestRoom_StartRaceWhenFull(t *testing.T) {
 	r.InsertPlayer(p1)
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
+	r.robot.Stop()
 
 	assertRoomIsFull(r, t)
 }
@@ -134,6 +135,7 @@ func TestRoom_JoinRoomWhenFull(t *testing.T) {
 	r.InsertPlayer(p2)
 	p3 := buildNewPlayer(3, "Johan")
 	r.InsertPlayer(p3)
+	r.robot.Stop()
 
 	assertRoomIsFull(r, t)
 }
@@ -143,6 +145,7 @@ func TestRoom_LeaveRoomWhenRaceStarts(t *testing.T) {
 	r.InsertPlayer(p1)
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
+	r.robot.Stop()
 
 	utility.AssertEquals(r.RemovePlayer(p1.PlayerID), false, "Remove player should be false if full!", t)
 	assertRoomIsFull(r, t)
@@ -151,19 +154,21 @@ func TestRoom_LeaveRoomWhenRaceStarts(t *testing.T) {
 func TestRoom_BuildMessagePayload(t *testing.T) {
 	r, p1 := initiateTestData()
 	r.InsertPlayer(p1)
+	p2 := buildNewPlayer(2, "Daniel")
+	r.InsertPlayer(p2)
+
 	player1 := r.QueryPlayer(p1.PlayerID)
 	player1.SetPosition(model.Position{
 		X: 2.1,
 		Y: 1.3,
 	})
-
-	p2 := buildNewPlayer(2, "Daniel")
-	r.InsertPlayer(p2)
+	<- time.After(10 * time.Millisecond)
 	player2 := r.QueryPlayer(p2.PlayerID)
 	player2.SetPosition(model.Position{
 		X: 1.1,
 		Y: 0.3,
 	})
+	r.robot.Stop()
 
 	var expectedPayload = "1#2.1,1.3-2#1.1,0.3"
 	var actualPayload = r.buildMessagePayload()
@@ -192,9 +197,9 @@ func TestRoom_HandleMessage(t *testing.T) {
 	var topic = fmt.Sprintf("gr-update-racer-position-room-%d", r.roomID)
 	r.robot.Stop()
 	go gobot.Every(5 * time.Millisecond, func() {
-		r.mqttAdaptor.Publish(topic, []byte(messagePayload))
+		r.mqttAdaptor.PublishWithQOS(topic, 2, []byte(messagePayload))
 	})
-	<- time.After(2 * time.Second)
+	<- time.After(1 * time.Second)
 	position := r.QueryPlayer(p1.PlayerID).Position()
 	utility.AssertEquals(position.X, 1.1, "X isn't equal to 1.1", t)
 	utility.AssertEquals(position.Y, 0.3, "Y isn't equal to 0.3", t)
