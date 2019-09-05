@@ -197,7 +197,7 @@ func TestRoom_HandleMessage(t *testing.T) {
 	var topic = fmt.Sprintf("gr-update-racer-position-room-%d", r.roomID)
 	r.robot.Stop()
 	go gobot.Every(5 * time.Millisecond, func() {
-		r.mqttAdaptor.PublishWithQOS(topic, 2, []byte(messagePayload))
+		r.mqttAdaptor.Publish(topic, []byte(messagePayload))
 	})
 	<- time.After(1 * time.Second)
 	position := r.QueryPlayer(p1.PlayerID).Position()
