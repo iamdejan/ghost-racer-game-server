@@ -83,7 +83,7 @@ func TestRoom_QueryPlayer_NotFound(t *testing.T) {
 	r, p := initiateTestData()
 	r.InsertPlayer(p)
 	queryPlayerResult := r.QueryPlayer(2)
-	utility.AssertEquals(queryPlayerResult, nil, "queryPlayerResult should be nil!", t)
+	utility.AssertEquals(fmt.Sprint(queryPlayerResult), fmt.Sprint(nil), "queryPlayerResult should be nil!", t)
 }
 
 func TestRoom_EventsWhenInsertPlayer(t *testing.T) {
@@ -194,7 +194,7 @@ func TestRoom_HandleMessage(t *testing.T) {
 	go gobot.Every(5 * time.Millisecond, func() {
 		r.mqttAdaptor.Publish(topic, []byte(messagePayload))
 	})
-	<- time.After(1 * time.Second)
+	<- time.After(2 * time.Second)
 	position := r.QueryPlayer(p1.PlayerID).Position()
 	utility.AssertEquals(position.X, 1.1, "X isn't equal to 1.1", t)
 	utility.AssertEquals(position.Y, 0.3, "Y isn't equal to 0.3", t)
