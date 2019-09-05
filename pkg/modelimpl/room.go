@@ -14,42 +14,27 @@ import (
 
 const dataSeparator = "#"
 const positionSeparator = ","
+const eachDataSeparator = "-"
+
+const host = "broker.hivemq.com:1883"
 
 type room struct {
 	roomMutex sync.RWMutex
 
 	roomID uint64
-	players map[uint64]model.Player
+	players map[uint64]*player
 	capacity int
 	circuit model.Circuit
 
 	eventFeed *roomEventFeed
 
+	mqttAdaptor *mqtt.Adaptor
 	robot *gobot.Robot
 }
 
-
-func newPosition(data []string) (p model.Position) {
-	x, err := strconv.ParseFloat(data[0], 64)
-	if err != nil {
-		log.Fatal("Fail to parse! Error:", err)
-	}
-	y, err := strconv.ParseFloat(data[1], 64)
-	if err != nil {
-		log.Fatal("Fail to parse! Error:", err)
-	}
-	p = model.Position{
-		X: x,
-		Y: y,
-	}
-	return p
-}
-
-
-//data example: 1#11.3,31.6
 func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 	r := &room{
-		players:  make(map[uint64]model.Player),
+		players:  make(map[uint64]*player),
 		roomID:   roomID,
 		capacity: capacity,
 		circuit: &circuit{
@@ -59,28 +44,52 @@ func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 
 	}
 
-	mqttAdaptor := mqtt.NewAdaptor("test.mosquitto.org:1883", "pinger")
+	mqttAdaptor := mqtt.NewAdaptor(host, "pinger")
 	work := func() {
-		mqttAdaptor.On(fmt.Sprintf("gr-update-racer-position-at-room-%d", roomID), func(msg mqtt.Message) {
+		//data example: 1#11.3,31.6
+		mqttAdaptor.On(fmt.Sprintf("gr-update-racer-position-room-%d", roomID), func(msg mqtt.Message) {
+			log.Println("Receive message!")
 			responseData := strings.Split(string(msg.Payload()), dataSeparator)
 			positionData := strings.Split(responseData[1], positionSeparator)
-			position := newPosition(positionData)
+			position := model.NewPosition(positionData)
 
 			playerID, _ := strconv.ParseUint(responseData[0], 10, 64)
-			p := r.QueryPlayer(playerID)
+			p := r.players[playerID]
 			p.SetPosition(position)
 		})
 
 		//TODO: publish players' position to players
 		gobot.Every(10 * time.Millisecond, func() {
-			//TODO: decide format
+			payload := r.buildMessagePayload()
+			if _, err := mqttAdaptor.PublishWithQOS(fmt.Sprintf("gr-blast-racer-position-room-%d", roomID), 1, []byte(payload)); err != nil {
+				log.Println("Fail to publish message! Error:", err)
+			}
 		})
 	}
-
-	robot := gobot.NewRobot(fmt.Sprintf("mqttBot-room-%d", roomID), []gobot.Connection{mqttAdaptor}, work)
+	r.mqttAdaptor = mqttAdaptor
+	robot := gobot.NewRobot(
+		fmt.Sprintf("mqttBot-room-%d", roomID),
+		[]gobot.Connection{r.mqttAdaptor},
+		work,
+	)
 	r.robot = robot
 
 	return r
+}
+
+func (r *room) buildMessagePayload() string {
+	//Example: 1#11.3,31.6-2#5.4,3.5
+	var payload string
+	for playerID, player := range r.players {
+		payload += fmt.Sprint(playerID)
+		payload += dataSeparator
+		payload += fmt.Sprint(player.Position().X)
+		payload += positionSeparator
+		payload += fmt.Sprint(player.Position().Y)
+		payload += eachDataSeparator
+	}
+	payload = strings.Trim(payload, eachDataSeparator)
+	return payload
 }
 
 func (r *room) ID() uint64 {
@@ -115,6 +124,7 @@ func (r *room) doesGameStart() bool {
 
 func (r *room) startRace() {
 	r.eventFeed.put(model.RoomEventRaceStarts())
+	go r.robot.Start()
 }
 
 func (r *room) InsertPlayer(payload model.PlayerPayload) bool {
