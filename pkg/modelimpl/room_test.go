@@ -156,6 +156,7 @@ func TestRoom_BuildMessagePayload(t *testing.T) {
 	r.InsertPlayer(p1)
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
+	r.robot.Stop()
 
 	player1 := r.QueryPlayer(p1.PlayerID)
 	player1.SetPosition(model.Position{
@@ -168,7 +169,6 @@ func TestRoom_BuildMessagePayload(t *testing.T) {
 		X: 1.1,
 		Y: 0.3,
 	})
-	r.robot.Stop()
 
 	var expectedPayload = "1#2.1,1.3-2#1.1,0.3"
 	var actualPayload = r.buildMessagePayload()
