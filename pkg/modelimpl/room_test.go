@@ -135,6 +135,7 @@ func TestRoom_JoinRoomWhenFull(t *testing.T) {
 	r.InsertPlayer(p2)
 	p3 := buildNewPlayer(3, "Johan")
 	r.InsertPlayer(p3)
+	r.mqttAdaptor.Disconnect()
 	r.robot.Stop()
 
 	assertRoomIsFull(r, t)
@@ -145,6 +146,7 @@ func TestRoom_LeaveRoomWhenRaceStarts(t *testing.T) {
 	r.InsertPlayer(p1)
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
+	r.mqttAdaptor.Disconnect()
 	r.robot.Stop()
 
 	utility.AssertEquals(r.RemovePlayer(p1.PlayerID), false, "Remove player should be false if full!", t)
@@ -156,6 +158,7 @@ func TestRoom_BuildMessagePayload(t *testing.T) {
 	r.InsertPlayer(p1)
 	p2 := buildNewPlayer(2, "Daniel")
 	r.InsertPlayer(p2)
+	r.mqttAdaptor.Disconnect()
 	r.robot.Stop()
 
 	player1 := r.QueryPlayer(p1.PlayerID)
@@ -195,8 +198,9 @@ func TestRoom_HandleMessage(t *testing.T) {
 
 	var messagePayload = "1#1.1,0.3"
 	var topic = fmt.Sprintf("gr-update-racer-position-room-%d", r.roomID)
+	r.mqttAdaptor.Disconnect()
 	r.robot.Stop()
-	go gobot.Every(5 * time.Millisecond, func() {
+	go gobot.Every(1 * time.Millisecond, func() {
 		r.mqttAdaptor.Publish(topic, []byte(messagePayload))
 	})
 	<- time.After(1 * time.Second)
