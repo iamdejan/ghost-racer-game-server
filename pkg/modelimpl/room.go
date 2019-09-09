@@ -6,6 +6,7 @@ import (
 	"gobot.io/x/gobot"
 	"gobot.io/x/gobot/platforms/mqtt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,7 +47,7 @@ func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 
 	mqttAdaptor := mqtt.NewAdaptor(host, "pinger")
 	work := func() {
-		//data example: 1#11.3,31.6
+		//data example: 1#11.3,31.6,2.5
 		mqttAdaptor.On(fmt.Sprintf("gr-update-racer-position-room-%d", roomID), func(msg mqtt.Message) {
 			log.Println("Receive message!")
 			responseData := strings.Split(string(msg.Payload()), dataSeparator)
@@ -77,14 +78,25 @@ func newRoom(roomID uint64, capacity int, circuitID uint64) *room {
 }
 
 func (r *room) buildMessagePayload() string {
-	//Example: 1#11.3,31.6-2#5.4,3.5
+	//Example: 1#11.3,31.6,2.5-2#5.4,3.5,1.0
 	var payload string
-	for playerID, player := range r.players {
+	var tempIDs []uint64
+	for playerID, _ := range r.players {
+		tempIDs = append(tempIDs, playerID)
+	}
+	sort.Slice(tempIDs, func(i, j int) bool {
+		return tempIDs[i] < tempIDs[j];
+	})
+
+	for _, playerID := range tempIDs {
+		player := r.players[playerID]
 		payload += fmt.Sprint(playerID)
 		payload += dataSeparator
 		payload += fmt.Sprint(player.Position().X)
 		payload += positionSeparator
 		payload += fmt.Sprint(player.Position().Y)
+		payload += positionSeparator
+		payload += fmt.Sprint(player.Position().Angle)
 		payload += eachDataSeparator
 	}
 	payload = strings.Trim(payload, eachDataSeparator)

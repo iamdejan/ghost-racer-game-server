@@ -165,15 +165,17 @@ func TestRoom_BuildMessagePayload(t *testing.T) {
 	player1.SetPosition(model.Position{
 		X: 2.1,
 		Y: 1.3,
+		Angle: 2.5,
 	})
 	<- time.After(10 * time.Millisecond)
 	player2 := r.QueryPlayer(p2.PlayerID)
 	player2.SetPosition(model.Position{
 		X: 1.1,
 		Y: 0.3,
+		Angle: 1.4,
 	})
 
-	var expectedPayload = "1#2.1,1.3-2#1.1,0.3"
+	var expectedPayload = "1#2.1,1.3,2.5-2#1.1,0.3,1.4"
 	var actualPayload = r.buildMessagePayload()
 
 	utility.AssertEquals(expectedPayload, actualPayload, "expectedPayload should be equal to actualPayload", t)
@@ -186,6 +188,7 @@ func TestRoom_HandleMessage(t *testing.T) {
 	player1.SetPosition(model.Position{
 		X: 2.1,
 		Y: 1.3,
+		Angle: 2.5,
 	})
 
 	p2 := buildNewPlayer(2, "Daniel")
@@ -194,9 +197,10 @@ func TestRoom_HandleMessage(t *testing.T) {
 	player2.SetPosition(model.Position{
 		X: 1.1,
 		Y: 0.3,
+		Angle: 1.4,
 	})
 
-	var messagePayload = "1#1.1,0.3"
+	var messagePayload = "1#1.1,0.3,0.5"
 	var topic = fmt.Sprintf("gr-update-racer-position-room-%d", r.roomID)
 	r.mqttAdaptor.Disconnect()
 	r.robot.Stop()
@@ -207,4 +211,5 @@ func TestRoom_HandleMessage(t *testing.T) {
 	position := r.QueryPlayer(p1.PlayerID).Position()
 	utility.AssertEquals(position.X, 1.1, "X isn't equal to 1.1", t)
 	utility.AssertEquals(position.Y, 0.3, "Y isn't equal to 0.3", t)
+	utility.AssertEquals(position.Angle, 0.5, "Angle isn't equal to 0.5", t)
 }

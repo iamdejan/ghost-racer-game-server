@@ -20,6 +20,7 @@ type Player interface {
 type Position struct {
 	X float64
 	Y float64
+	Angle float64
 }
 
 func NewPosition(data []string) (p Position) {
@@ -31,9 +32,14 @@ func NewPosition(data []string) (p Position) {
 	if err != nil {
 		log.Fatal("Fail to parse! Error:", err)
 	}
+	angle, err := strconv.ParseFloat(data[2], 64)
+	if err != nil {
+		log.Fatal("Fail to parse! Error:", err)
+	}
 	p = Position{
 		X: x,
 		Y: y,
+		Angle: angle,
 	}
 	return p
 }
