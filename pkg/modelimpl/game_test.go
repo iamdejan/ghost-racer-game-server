@@ -19,6 +19,11 @@ func newGame() Game {
 	return game
 }
 
+func TestGame_NewGame(t *testing.T) {
+	game := NewGame()
+	utility.AssertNotNil(game, "game is not nil", t)
+}
+
 func TestGame_CreateRoom(t *testing.T) {
 	game = newGame()
 	room, statusCode, _ := game.CreateRoom(2,1)

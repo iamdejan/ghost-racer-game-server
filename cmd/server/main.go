@@ -20,7 +20,7 @@ func findListenAddress() string {
 func main() {
 	handler := httphandler.Handler{
 		RequestMaxDuration: 30 * time.Second,
-		Game:               modelimpl.NewGame(),
+		Game: modelimpl.NewGame(),
 	}
 
 	listenAddress := findListenAddress()
